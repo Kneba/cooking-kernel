@@ -194,9 +194,9 @@ nocol='\033[0m'
 mkdir -p out
 make O=out clean
 
-echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
+echo -e "$cyan**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****$nocol"
 echo -e "$blue***********************************************"
-echo    "          BUILDING KERNEL          "
+echo    "               BUILDING KERNEL               "
 echo -e "***********************************************$nocol"
 make $KERNEL_DEFCONFIG O=out 2>&1 | tee -a error.log
 
@@ -259,12 +259,11 @@ else
     CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
 fi
 
+echo -e "$cyan==== |Kernel Compilation Completed| ====$nocol"
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
 
-echo "**** Kernel Compilation Completed ****"
-echo "**** Verify Image.gz-dtb ****"
-
+echo -e "$red**** Verify Image.gz-dtb ****$nocol"
 if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
     tg_post_build "error.log" "Compile Error!!"
     echo -e "$red Compile Failed!!!$nocol"
@@ -272,18 +271,18 @@ if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
 fi
 
 # Anykernel3 time!!
-echo "**** Verifying AnyKernel3 Directory ****"
+echo -e "$blue==== |Verifying AnyKernel3| ====$nocol"
 if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
   echo "AnyKernel3 not found! Cloning..."
 fi
 
 if [ "$COMP" = 6 ]; then
-  if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+  if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
     tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
     echo "Cloning failed! Aborting..."
     exit 1
 else
-  if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+  if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
     tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
     echo "Cloning failed! Aborting..."
     exit 1
@@ -292,14 +291,15 @@ fi
 
 AK3DIR=$KERNELDIR/AnyKernel3
 
-echo "**** Copying Image.gz-dtb ****"
+echo -e "$blue**** Copying Image.gz-dtb ****$nocol"
 cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
 
-echo "**** Time to zip up! ****"
-cd $AK3DIR
+echo -e "$blue**** Time to zip up! ****$nocol"
 if [ "$COMP" = 6 ]; then
-zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+cd $AK3DIR
+zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
 else
+cd $AK3DIR
 cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
 cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
 mv anykernel-real.sh anykernel.sh
@@ -326,10 +326,10 @@ sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
 sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
 sed -i "s/KBDATE/$DATE/g" aroma-config
 sed -i "s/KVARIANT/$VARIANT/g" aroma-config
-fi
 
 cd $AK3DIR
 zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+fi
 
 if ! [ -f $FINAL_ZIP* ]; then
     tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to zipping the kernel, Sending image file instead."
@@ -349,7 +349,7 @@ fi
 
 MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
 
-echo "**** Uploading your zip now ****"
+echo -e "$yellow**** Uploading your zip now ****$nocol"
 tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
  $(($DIFF / 60)) min(s) and $(($DIFF % 60)) seconds
 📱 *Device*
