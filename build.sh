@@ -175,19 +175,24 @@ export SUBARCH=arm64
 MAKE="./makeparallel"
 
 BUILD_START=$(date +"%s")
-blue='\033[0;34m'
-cyan='\033[0;36m'
-yellow='\033[0;33m'
-red='\033[0;31m'
-nocol='\033[0m'
+Reset='\033[0m'
+Black='\033[0;30m'
+Red='\033[1;31m'
+Yellow='\033[0;33m'
+Green='\033[1;32m'
+Orange='\033[1;33m'
+Blue='\033[0;34m'
+Purple='\033[0;35m'
+Cyan='\033[1;36m'
+White='\033[0;37m'
 
 mkdir -p out
 make O=out clean
 
 echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
-echo -e "$blue***********************************************"
+echo -e "$Blue***********************************************"
 echo    "                BUILDING KERNEL                "
-echo -e "***********************************************$nocol"
+echo -e "***********************************************$Reset"
 make $KERNEL_DEFCONFIG O=out 2>&1 | tee -a error.log
 
 if [ "$COMP" = 4 ]; then
@@ -251,10 +256,11 @@ fi
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
-echo "**** Kernel Compilation Completed ****"
 
+echo "**** Kernel Compilation Completed ****"
 echo "**** Verify Image.gz-dtb ****"
-if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
+
+if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ]; then
     tg_post_build "error.log" "Compile Error!!"
     echo "Compile Failed!!!"
     exit 1
@@ -269,14 +275,12 @@ if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
-    fi
   else
     if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
-    fi
-  fi
+   fi
 fi
 
 AK3DIR=$KERNELDIR/AnyKernel3
