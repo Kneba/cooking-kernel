@@ -3,16 +3,12 @@
 export TZ="Asia/Jakarta"
 
 if [ -f kernel/arch/arm64/configs/asus/X00TD_defconfig ]; then
-    cd kernel
+  cd kernel
+elif [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
+  cd kernel
 else
-    echo "Kernel Cloning Failed! aborting..."
-    exit 1
-if [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
-    cd kernel
-else
-    echo "Kernel Cloning Failed! aborting..."
-    exit 1
-fi
+  echo "Kernel Cloning Failed! aborting..."
+  exit 1
 fi
 
 #set -e
@@ -119,13 +115,8 @@ kernel Version <b>$KERVER</b> for <b>$DEVICENAME</b>.
 Crafted with <b>`source /etc/os-release && echo "$NAME"`</b>.
 Log URL <a href='$CIRCLE_BUILD_URL'>Click Here</a>."
 
-if ! [ -d "$KERNELDIR/clang" ]; then
+if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
   echo "Clang not found! Cloning..."
-if ! [ -d "$KERNELDIR/sdclang" ]; then
-  echo "SDClang not found! Cloning..."
-  fi
-fi
-
   if [ $COMP = "6" ]; then
     git clone --depth=1 https://gitlab.com/ImSurajxD/clang-r450784d -b master clang
     git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
@@ -257,7 +248,6 @@ else
     CROSS_COMPILE="$KERNELDIR/clang/bin/clang" \
     CROSS_COMPILE_COMPAT="$KERNELDIR/clang/bin/clang" \
     CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
-    fi
 fi
 
 BUILD_END=$(date +"%s")
@@ -265,7 +255,6 @@ DIFF=$(($BUILD_END - $BUILD_START))
 echo "**** Kernel Compilation Completed ****"
 
 echo "**** Verify Image.gz-dtb ****"
-
 if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
     tg_post_build "error.log" "Compile Error!!"
     echo "Compile Failed!!!"
@@ -276,18 +265,18 @@ fi
 echo "**** Verifying AnyKernel3 ****"
 if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
   echo "AnyKernel3 not found! Cloning..."
-fi
-
-if [ "$COMP" = 6 ]; then
-  if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
-    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
-    echo "Cloning failed! Aborting..."
-    exit 1
-else
-  if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
-    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
-    echo "Cloning failed! Aborting..."
-    exit 1
+  if [ "$COMP" = 6 ]; then
+    if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
+      tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+      echo "Cloning failed! Aborting..."
+      exit 1
+    fi
+  else
+    if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
+      tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+      echo "Cloning failed! Aborting..."
+      exit 1
+    fi
   fi
 fi
 
@@ -298,39 +287,38 @@ cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
 
 echo "**** Time to zip up! ****"
 if [ "$COMP" = 6 ]; then
-cd $AK3DIR
-zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+  cd $AK3DIR
+  zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
 else
-cd $AK3DIR
-cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
-cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
-mv anykernel-real.sh anykernel.sh
-sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
-sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
-sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
-sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
-sed -i "s/kernel.made=.*/kernel.made=dotkit @queenserenade/g" anykernel.sh
-sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
-sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
-sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
-sed -i "s/build.type=.*/build.type=$VERSION/g" anykernel.sh
-sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
-sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
-sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
-sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
-sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
-sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
-sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
-cd META-INF/com/google/android
-sed -i "s/KNAME/$KERNELNAME/g" aroma-config
-sed -i "s/KVER/$KERVER/g" aroma-config
-sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
-sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
-sed -i "s/KBDATE/$DATE/g" aroma-config
-sed -i "s/KVARIANT/$VARIANT/g" aroma-config
-
-cd $AK3DIR
-zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+  cd $AK3DIR
+  cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
+  cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
+  mv anykernel-real.sh anykernel.sh
+  sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
+  sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
+  sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
+  sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
+  sed -i "s/kernel.made=.*/kernel.made=dotkit @queenserenade/g" anykernel.sh
+  sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
+  sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
+  sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
+  sed -i "s/build.type=.*/build.type=$VERSION/g" anykernel.sh
+  sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
+  sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
+  sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
+  sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
+  sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
+  sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
+  sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
+  cd META-INF/com/google/android
+  sed -i "s/KNAME/$KERNELNAME/g" aroma-config
+  sed -i "s/KVER/$KERVER/g" aroma-config
+  sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
+  sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
+  sed -i "s/KBDATE/$DATE/g" aroma-config
+  sed -i "s/KVARIANT/$VARIANT/g" aroma-config
+  cd $AK3DIR
+  zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
 fi
 
 if ! [ -f $FINAL_ZIP* ]; then
