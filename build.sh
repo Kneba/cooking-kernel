@@ -1,483 +1,355 @@
 #!/bin/bash
-# shellcheck disable=SC2154
 
- #
- # Script For Building Android arm64 Kernel
- #
- # Copyright (c) 2018-2021 Panchajanya1999 <rsk52959@gmail.com>
- # Copyright (c) 2021-2024 dotkit <ewprjkt@proton.me>
- #
- # Licensed under the Apache License, Version 2.0 (the "License");
- # you may not use this file except in compliance with the License.
- # You may obtain a copy of the License at
- #
- #      http://www.apache.org/licenses/LICENSE-2.0
- #
- # Unless required by applicable law or agreed to in writing, software
- # distributed under the License is distributed on an "AS IS" BASIS,
- # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- # See the License for the specific language governing permissions and
- # limitations under the License.
- #
+export TZ="Asia/Jakarta"
 
-# Kernel building script
-set -e
-
-# Function to show an informational message
-msger()
-{
-	while getopts ":n:e:" opt
-	do
-		case "${opt}" in
-			n) printf "[*] $2 \n" ;;
-			e) printf "[×] $2 \n"; return 1 ;;
-		esac
-	done
-}
-
-cdir()
-{
-	cd "$1" 2>/dev/null || msger -e "The directory $1 doesn't exists !"
-}
-
-##------------------------------------------------------##
-##----------Basic Informations, COMPULSORY--------------##
-
-# The defult directory where the kernel should be placed
-KERNEL_DIR="$(pwd)"
-BASEDIR="$(basename "$KERNEL_DIR")"
-
-# Kernel name
-KERNELNAME=TheOneMemory
-CODENAME=Hayzel
-VARIANT=HMP
-BASE=CLO
-
-# Changelogs
-CL_URL="https://github.com/Tiktodz/android_kernel_asus_sdm636/commits/"
-
-# The name of the Kernel, to name the ZIP
-ZIPNAME="$KERNELNAME-$BASE-$VARIANT"
-
-# Build Author
-# Take care, it should be a universal and most probably, case-sensitive
-AUTHOR="queen"
-
-# Architecture
-ARCH=arm64
-
-# The name of the device for which the kernel is built
-MODEL="Asus Zenfone Max Pro M1"
-
-# The codename of the device
-DEVICE="X00TD"
-
-# The defconfig which should be used. Get it from config.gz from
-# your device or check source
-DEFCONFIG=X00TD_defconfig
-
-# Specify compiler.
-# 'sdclang' or 'gcc' or 'ew'
-COMPILER=ew
-
-# Build modules. 0 = NO | 1 = YES
-MODULES=0
-
-# Specify linker.
-# 'ld.lld'(default) Change to 'ld.bfd' for GCC compiler
-LINKER=ld.lld
-
-# Clean source prior building. 1 is NO(default) | 0 is YES
-INCREMENTAL=1
-
-# Push ZIP to Telegram. 1 is YES | 0 is NO(default)
-PTTG=1
-if [ $PTTG = 1 ]
-then
-	# Set Telegram Chat ID
-	CHATID="$TG_CHAT_ID"
+if [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
+    cd kernel
+else
+    echo "Kernel Cloning Failed! aborting..."
+    exit 1
 fi
 
-# Generate a full DEFCONFIG prior building. 1 is YES | 0 is NO(default)
-DEF_REG=0
+#set -e
 
-# Files/artifacts
-FILES=Image.gz-dtb
+# Set the Variables
+KERNELDIR=$(pwd)
 
-# Build dtbo.img (select this only if your source has support to building dtbo.img)
-# 1 is YES | 0 is NO(default)
-BUILD_DTBO=0
-if [ $BUILD_DTBO = 1 ]
-then
-	# Set this to your dtbo path.
-	# Defaults in folder out/arch/arm64/boot/dts
-	DTBO_PATH="xiaomi/violet-sm6150-overlay.dtbo"
-fi
-
-# Sign the zipfile
-# 1 is YES | 0 is NO
-SIGN=1
-if [ $SIGN = 1 ]
-then
-	#Check for java
-	if ! hash java 2>/dev/null 2>&1; then
-		SIGN=0
-		msger -n "you may need to install java, if you wanna have Signing enabled"
-	else
-		SIGN=1
-	fi
-fi
-
-# Silence the compilation
-# 1 is YES(default) | 0 is NO
-SILENCE=0
-
-# Verbose build
-# 0 is Quiet(default)) | 1 is verbose | 2 gives reason for rebuilding targets
-VERBOSE=0
-
-# Debug purpose. Send logs on every successfull builds
-# 1 is YES | 0 is NO(default)
-LOG_DEBUG=0
-
-##------------------------------------------------------##
-##---------Do Not Touch Anything Beyond This------------##
-
-# Check if we are using a dedicated CI ( Continuous Integration ), and
-# set KBUILD_BUILD_VERSION and KBUILD_BUILD_HOST and CI_BRANCH
-
-## Set defaults first
-
-# shellcheck source=/etc/os-release
-export DISTRO=$(source /etc/os-release && echo "${NAME}")
-export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
-export CI_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-TERM=xterm
-
-## Check for CI
-if [ "$CI" ]
-then
-	if [ "$CIRCLECI" ]
-	then
-		export KBUILD_BUILD_VERSION="1"
-		export CI_BRANCH=$CIRCLE_BRANCH
-	fi
-	if [ "$DRONE" ]
-	then
-		export KBUILD_BUILD_VERSION=$DRONE_BUILD_NUMBER
-		export KBUILD_BUILD_HOST=$DRONE_SYSTEM_HOST
-		export CI_BRANCH=$DRONE_BRANCH
-		export BASEDIR=$DRONE_REPO_NAME # overriding
-		export SERVER_URL="${DRONE_SYSTEM_PROTO}://${DRONE_SYSTEM_HOSTNAME}/${AUTHOR}/${BASEDIR}/${KBUILD_BUILD_VERSION}"
-	else
-		msger -n "Not presetting Build Version"
-	fi
-fi
-
-# Check Kernel Version
+# Set kernel name
+CODENAME="Hayzel"
+DEVICENAME="X00TD"
+KERNELNAME="TOM"
+VARIANT="EAS"
+VERSION="EOL"
 KERVER=$(make kernelversion)
 
-# Set a commit head
-COMMIT_HEAD=$(git log --oneline -1)
+BONUS_MSG="*Note:* KernelSU-Next and APatch Supported! enjoy your dynamic rooting method! 🤫"
 
-# Set Date
-DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%H%M")
+# set compiler
+# 1 = Neutron Clang
+# 2 = TheRagingBeast Clang
+# 3 = ElectroWizard Clang
+# 4 = Proton Clang
+# 5 = Snapdragon Clang
+# 6 = AOSP Clang
+COMP=6
 
-# Now Its time for other stuffs like cloning, exporting, etc
+# You want to sign your build?
+# 1 = yes || 0 = no
+SIGN=1
 
- clone()
- {
-	echo " "
-	if [ $COMPILER = "gcc" ]
-	then
-		msger -n "|| Cloning GCC 4.9 ||"
-		git clone --depth=1 https://github.com/KudProject/aarch64-linux-android-4.9 gcc64
-		git clone --depth=1 https://github.com/KudProject/arm-linux-androideabi-4.9 gcc32
-  
-  		# Toolchain Directory defaults to gcc
-		GCC64_DIR=$KERNEL_DIR/gcc64
-		GCC32_DIR=$KERNEL_DIR/gcc32
+# Define is the target telegram is a supergroup or not
+# 1 = true || 0 = false
+TG_SUPER=0
 
-	elif [ $COMPILER = "ew" ]
-	then
-		msger -n "|| Cloning ElectroWizard clang ||"
-   		git clone --depth=1 https://gitlab.com/Tiktodz/electrowizard-clang.git -b 16 --single-branch ewclang
-  
-		# Toolchain Directory defaults to ewclang
-		TC_DIR=$KERNEL_DIR/ewclang
+# Additional Variables
+KERNEL_DEFCONFIG=X00TD_defconfig
+DATE=$(date '+%d%m%Y')
+FINAL_ZIP="$KERNELNAME-$VARIANT-$VERSION-$KERVER-$DATE"
+export KBUILD_BUILD_TIMESTAMP=$(date)
+export KBUILD_BUILD_USER="queen"
+export KBUILD_BUILD_HOST="electrowizard"
 
-	elif [ $COMPILER = "sdclang" ]
-	then
-		msger -n "|| Cloning SDClang ||"
-		git clone --depth=1 https://gitlab.com/VoidUI/snapdragon-clang sdclang
+############################################################
 
-  		msger -n "|| Cloning GCC 4.9 ||"
-		git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
-		git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 gcc32
-
-		# Toolchain Directory defaults to sdclang
-		TC_DIR=$KERNEL_DIR/sdclang
-  
-		# Toolchain Directory defaults to gcc
-		GCC64_DIR=$KERNEL_DIR/gcc64
-		GCC32_DIR=$KERNEL_DIR/gcc32
-  	fi
-
-	msger -n "|| Cloning Anykernel ||"
-	git clone https://github.com/Tiktodz/AnyKernel3.git -b hmp-old AnyKernel3
-
-	if [ $BUILD_DTBO = 1 ]
-	then
-		msger -n "|| Cloning libufdt ||"
-		git clone https://android.googlesource.com/platform/system/libufdt "$KERNEL_DIR"/scripts/ufdt/libufdt
-	fi
+tg_post_msg(){
+        if [ $TG_SUPER = 1 ]
+        then
+            curl -s -o /dev/null -X POST \
+            "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            -d chat_id="$TG_CHAT_ID" \
+            -d message_thread_id="$TG_TOPIC_ID" \
+            -d "disable_web_page_preview=true" \
+            -d "parse_mode=html" \
+            -d text="$1"
+        else
+            curl -s -o /dev/null -X POST \
+            "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            -d chat_id="$TG_CHAT_ID" \
+            -d "disable_web_page_preview=true" \
+            -d "parse_mode=html" \
+            -d text="$1"
+        fi
 }
-
-##------------------------------------------------------##
-
-exports()
-{
-	KBUILD_BUILD_USER=$AUTHOR
-	SUBARCH=$ARCH
- 
-	if [ $COMPILER = "sdclang" ]
-	then
-		CLANG_VER="Snapdragon clang version 14.1.5"
-		KBUILD_COMPILER_STRING="$CLANG_VER X GCC 4.9"
-		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
-		ClangMoreStrings="AR=llvm-ar NM=llvm-nm AS=llvm-as STRIP=llvm-strip OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf HOSTAR=llvm-ar HOSTAS=llvm-as LD_LIBRARY_PATH=$TC_DIR/lib LD=ld.lld HOSTLD=ld.lld"
-	elif [ $COMPILER = "gcc" ]
-	then
-		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-linux-android-gcc --version | head -n 1)
-		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
-	elif [ $COMPILER = "ew" ]
-	then
-		KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-		PATH="$TC_DIR/bin:$PATH"
-	fi
-
-	BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
-	BOT_BUILD_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
-	PROCS=$(nproc --all)
-
-	export KBUILD_BUILD_USER ARCH SUBARCH PATH \
-               KBUILD_COMPILER_STRING BOT_MSG_URL \
-               BOT_BUILD_URL PROCS
-}
-
-##---------------------------------------------------------##
-
-tg_post_msg()
-{
-	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
-	-d "disable_web_page_preview=true" \
-	-d "parse_mode=html" \
-	-d text="$1"
-
-}
-
-##----------------------------------------------------------##
-
 tg_post_build()
 {
-	#Post MD5Checksum alongwith for easeness
-	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
-
-	#Show the Checksum alongwith caption
-	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
-	-F chat_id="$CHATID"  \
-	-F "disable_web_page_preview=true" \
-	-F "parse_mode=Markdown" \
-	-F caption="$2 | *MD5 Checksum : *\`$MD5CHECK\`"
+	if [ $TG_SUPER = 1 ]
+	then
+	    MSGID=$(curl -s -F document=@"$1" \
+	    "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
+	    -F chat_id="$TG_CHAT_ID"  \
+	    -F message_thread_id="$TG_TOPIC_ID" \
+	    -F "disable_web_page_preview=true" \
+	    -F "parse_mode=Markdown" \
+	    -F caption="$2" \
+	    | cut -d ":" -f 4 | cut -d "," -f 1)
+	else
+	    MSGID=$(curl -s -F document=@"$1" \
+	    "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
+	    -F chat_id="$TG_CHAT_ID"  \
+	    -F "disable_web_page_preview=true" \
+	    -F "parse_mode=Markdown" \
+	    -F caption="$2" \
+	    | cut -d ":" -f 4 | cut -d "," -f 1)
+	fi
 }
-
-##----------------------------------------------------------##
-
-build_kernel()
+tg_pin_msg()
 {
-	if [ $INCREMENTAL = 0 ]
-	then
-		msger -n "|| Cleaning Sources ||"
-		make mrproper && rm -rf out
-	fi
-
-	if [ "$PTTG" = 1 ]
- 	then
-		tg_post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Linker : </b><code>$LINKER</code>%0a<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<a href='$CL_URL'>Changelogs</a>"
-	fi
-
-	make O=out $DEFCONFIG
-	if [ $DEF_REG = 1 ]
-	then
-		cp .config arch/arm64/configs/$DEFCONFIG
-		git add arch/arm64/configs/$DEFCONFIG
-		git commit -m "$DEFCONFIG: Regenerate This is an auto-generated commit"
-	fi
-
-	BUILD_START=$(date +"%s")
-
-	if [ $COMPILER = "sdclang" ]
-	then
-		MAKE+=(
-                        ARCH=$ARCH \
-			SUBARCH=$ARCH \
-			CROSS_COMPILE=aarch64-linux-android- \
-			CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-			CLANG_TRIPLE=aarch64-linux-gnu- \
-			CC=clang \
-			HOSTCC=gcc \
-			HOSTCXX=g++ ${ClangMoreStrings}
-		)
-	elif [ $COMPILER = "gcc" ]
-	then
-		MAKE+=(
-			CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-			CROSS_COMPILE=aarch64-linux-android- \
-			AR=aarch64-linux-android-ar \
-			OBJDUMP=aarch64-linux-android-objdump \
-			STRIP=aarch64-linux-android-strip \
-			NM=aarch64-linux-android-nm \
-			OBJCOPY=aarch64-linux-android-objcopy \
-			LD=aarch64-linux-android-$LINKER
-		)
-	elif [ $COMPILER = "ew" ]
-	then
-		MAKE+=(
-			ARCH=$ARCH \
-			SUBARCH=$ARCH \
-			AS="$TC_DIR/bin/llvm-as" \
-			CC="$TC_DIR/bin/clang" \
-			HOSTCC="$TC_DIR/bin/clang" \
-			HOSTCXX="$TC_DIR/bin/clang++" \
-			LD="$TC_DIR/bin/ld.lld" \
-			AR="$TC_DIR/bin/llvm-ar" \
-			NM="$TC_DIR/bin/llvm-nm" \
-			STRIP="$TC_DIR/bin/llvm-strip" \
-			OBJCOPY="$TC_DIR/bin/llvm-objcopy" \
-			OBJDUMP="$TC_DIR/bin/llvm-objdump" \
-			CLANG_TRIPLE="$TC_DIR/bin/aarch64-linux-gnu-" \
-			CROSS_COMPILE="$TC_DIR/bin/clang" \
-			CROSS_COMPILE_COMPAT="$TC_DIR/bin/clang" \
-			CROSS_COMPILE_ARM32="$TC_DIR/bin/clang"
-		)
-	fi
-
-	if [ $SILENCE = "1" ]
-	then
-		MAKE+=( -s )
-	fi
-
-	msger -n "|| Started Compilation ||"
-	make -kj"$PROCS" O=out \
-		V=$VERBOSE \
-		"${MAKE[@]}" 2>&1 | tee error.log
-	if [ $MODULES = "1" ]
-	then
-	    msger -n "|| Started Compiling Modules ||"
-	    make -j"$PROCS" O=out \
-		 "${MAKE[@]}" modules_prepare
-	    make -j"$PROCS" O=out \
-		 "${MAKE[@]}" modules INSTALL_MOD_PATH="$KERNEL_DIR"/out/modules
-	    make -j"$PROCS" O=out \
-		 "${MAKE[@]}" modules_install INSTALL_MOD_PATH="$KERNEL_DIR"/out/modules
-	    find "$KERNEL_DIR"/out/modules -type f -iname '*.ko' -exec cp {} AnyKernel3/modules/system/lib/modules/ \;
-	fi
-
-		BUILD_END=$(date +"%s")
-		DIFF=$((BUILD_END - BUILD_START))
-
-		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/$FILES ]
-		then
-			msger -n "|| Kernel successfully compiled ||"
-			if [ $BUILD_DTBO = 1 ]
-			then
-				msger -n "|| Building DTBO ||"
-				tg_post_msg "<code>Building DTBO..</code>"
-				python2 "$KERNEL_DIR/scripts/ufdt/libufdt/utils/src/mkdtboimg.py" \
-					create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/$DTBO_PATH"
-			fi
-				gen_zip
-			else
-			if [ "$PTTG" = 1 ]
- 			then
-				tg_post_build "error.log" "*Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds*"
-                                exit 2
-			fi
-		fi
-
+    curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG_TOKEN/pinChatMessage" \
+    -d chat_id="$TG_CHAT_ID"  \
+    -d message_id=$MSGID \
+    -d disable_notification="true"
 }
 
-##--------------------------------------------------------------##
+############################################################
 
-gen_zip()
-{
-	msger -n "|| Zipping into a flashable zip ||"
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/$FILES AnyKernel3/$FILES
-	if [ $BUILD_DTBO = 1 ]
-	then
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
-	fi
-	cdir AnyKernel3
-	cp -af $KERNEL_DIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
-	cp -af $KERNEL_DIR/changelog META-INF/com/google/android/aroma/changelog.txt
-	cp -af anykernel-real.sh anykernel.sh
-	sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
-	sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
-	sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
-	sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
-	sed -i "s/kernel.made=.*/kernel.made=dotkit @fakedotkit/g" anykernel.sh
-	sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
-	sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
-	sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
-	sed -i "s/build.type=.*/build.type=$BASE/g" anykernel.sh
-	sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
-	sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
-	sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
-	sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
-	sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
-	sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
-	sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
-	cd META-INF/com/google/android
-	sed -i "s/KNAME/$KERNELNAME/g" aroma-config
-	sed -i "s/KVER/$KERVER/g" aroma-config
-	sed -i "s/KAUTHOR/dotkit @fakedotkit/g" aroma-config
-	sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
-	sed -i "s/KBDATE/$DATE/g" aroma-config
-	sed -i "s/KVARIANT/$VARIANT/g" aroma-config
-	cd ../../../..
+tg_post_msg "<b>`date '+%d %b %Y, %H:%M %Z'`</b>
+Masterpiece creation starts!
+kernel Version <b>$KERVER</b> for <b>$DEVICENAME</b>.
+Crafted with <b>`source /etc/os-release && echo "$NAME"`</b>.
+Log URL <a href='$CIRCLE_BUILD_URL'>Click Here</a>."
 
-	zip -r9 $ZIPNAME-"$DATE" * -x .git README.md anykernel-real.sh .gitignore zipsigner* "*.zip"
-
-	## Prepare a final zip variable
-	ZIP_FINAL="$ZIPNAME-$DATE"
-
-	if [ $SIGN = 1 ]
-	then
-		## Sign the zip before sending it to telegram
-		if [ "$PTTG" = 1 ]
- 		then
- 			msger -n "|| Signing Zip ||"
-			tg_post_msg "<code>Signing Zip file with AOSP keys..</code>"
- 		fi
-		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
-		java -jar zipsigner-3.0.jar "$ZIP_FINAL".zip "$ZIP_FINAL"-signed.zip
-		ZIP_FINAL="$ZIP_FINAL-signed"
-	fi
-
-	if [ "$PTTG" = 1 ]
- 	then
-		tg_post_build "$ZIP_FINAL.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
-	fi
-	cd ..
-}
-
-clone
-exports
-build_kernel
-
-if [ $LOG_DEBUG = "1" ]
-then
-	tg_post_build "error.log" "$CHATID" "Debug Mode Logs"
+if ! [ -d "$KERNELDIR/clang" ]; then
+  echo "Clang not found! Cloning..."
+if ! [ -d "$KERNELDIR/sdclang" ]; then
+  echo "SDClang not found! Cloning..."
+  fi
 fi
 
-##----------------*****-----------------------------##
+  if [ $COMP = "6" ]; then
+    git clone --depth=1 https://gitlab.com/ImSurajxD/clang-r450784d -b master clang
+    git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
+    git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 gcc32
+    cd $KERNELDIR
+    export PATH="$KERNELDIR/clang/bin:$KERNELDIR/gcc64/bin:$KERNELDIR/gcc32/bin:$PATH"
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+  elif [ $COMP = "2" ]; then
+    git clone https://gitlab.com/varunhardgamer/trb_clang --depth=1 -b 17 --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
+    export PATH="$KERNELDIR/clang/bin:$PATH"
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+  elif [ $COMP = "5" ]; then
+    apt-get install wget libncurses5 -y
+    git clone --depth=1 https://github.com/RyuujiX/SDClang -b 14 sdclang
+    git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
+    git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 gcc32
+    cd $KERNELDIR
+    export PATH="$KERNELDIR/sdclang/bin:$KERNELDIR/gcc64/bin:$KERNELDIR/gcc32/bin:$PATH"
+    export LD_LIBRARY_PATH="$KERNELDIR/sdclang/lib:$LD_LIBRARY_PATH"
+    CLANG_VER="Qualcomm® Snapdragon™ clang version 14.1.5"
+    export KBUILD_COMPILER_STRING="$CLANG_VER"
+    if ! [ -f "$KERNELDIR/sdclang/bin/clang" ]; then
+      echo "Cloning failed! Aborting..."; exit 1
+    fi
+  elif [ $COMP = "4" ]; then
+    git clone https://github.com/kdrag0n/proton-clang --depth=1 -b master --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
+    export PATH="$KERNELDIR/clang/bin:$PATH"
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+  elif [ $COMP = "3" ]; then
+    # git clone https://gitlab.com/Tiktodz/electrowizard-clang.git --depth=1 -b 16 --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
+    mkdir "$KERNELDIR/clang" && cd "$KERNELDIR/clang"
+    wget -O ew.tar.gz https://github.com/Tiktodz/electrowizard-clang/releases/download/ElectroWizard-Clang-18.1.8-release/ElectroWizard-Clang-18.1.8.tar.gz && tar -xzf ew.tar.gz && rm -f ew.tar.gz && cd $KERNELDIR
+    export PATH="$KERNELDIR/clang/bin:$PATH"
+    if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
+      echo "Cloning failed! Aborting..."; exit 1
+    fi
+  elif [ $COMP = "1" ]; then
+    apt-get install -y libarchive-tools
+    mkdir -p clang && cd clang
+    curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman" -o antman
+    bash antman -S=09092023
+    bash antman --patch=glibc
+    cd $KERNELDIR
+    export PATH="$KERNELDIR/clang/bin:$PATH"
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
+      echo "Cloning failed! Aborting..."; exit 1
+    fi
+  else
+    echo "Clang unavailable! Aborting..."; exit 1
+fi
+
+export ARCH=arm64
+export SUBARCH=arm64
+
+# Speed up build process
+MAKE="./makeparallel"
+
+BUILD_START=$(date +"%s")
+blue='\033[0;34m'
+cyan='\033[0;36m'
+yellow='\033[0;33m'
+red='\033[0;31m'
+nocol='\033[0m'
+
+mkdir -p out
+make O=out clean
+
+echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
+echo -e "$blue***********************************************"
+echo    "          BUILDING KERNEL          "
+echo -e "***********************************************$nocol"
+make $KERNEL_DEFCONFIG O=out 2>&1 | tee -a error.log
+
+if [ "$COMP" = 4 ]; then
+    make -j$(nproc --all) O=out LLVM=1 \
+    CC="$KERNELDIR/clang/bin/clang" \
+    CROSS_COMPILE="$KERNELDIR/clang/bin/aarch64-linux-gnu-" \
+    CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/arm-linux-gnueabi-" \
+    CLANG_TRIPLE="aarch64-linux-gnu-" \
+    AR="$KERNELDIR/clang/bin/llvm-ar" \
+    LD="$KERNELDIR/clang/bin/ld.lld" \
+    NM="$KERNELDIR/clang/bin/llvm-nm" \
+    OBJCOPY="$KERNELDIR/clang/bin/llvm-objcopy" \
+    OBJDUMP="$KERNELDIR/clang/bin/llvm-objdump" \
+    STRIP="$KERNELDIR/clang/bin/llvm-strip" 2>&1 | tee -a error.log
+elif [ $COMP = 5 ]; then
+    ClangMoreStrings="AR=llvm-ar NM=llvm-nm AS=llvm-as STRIP=llvm-strip HOST_PREFIX=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf HOSTAR=llvm-ar HOSTAS=llvm-as"
+    make -j$(nproc --all) O=out LLVM=1 \
+    ARCH=arm64 \
+    SUBARCH=arm64 \
+    CC=clang \
+    CROSS_COMPILE=aarch64-linux-android- \
+    CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+    CLANG_TRIPLE=aarch64-linux-gnu- \
+    HOSTCC=gcc \
+    HOSTCXX=g++ ${ClangMoreStrings} 2>&1 | tee -a error.log
+elif [ $COMP = 6 ]; then
+    make -j$(nproc --all) O=out LLVM=1 LLVM_IAS=1 \
+    CC=${KERNELDIR}/bin/clang \
+    NM=${KERNELDIR}/bin/llvm-nm \
+    CXX=${KERNELDIR}/bin/clang++ \
+    AR=${KERNELDIR}/bin/llvm-ar \
+    STRIP=${KERNELDIR}/bin/llvm-strip \
+    OBJCOPY=${KERNELDIR}/bin/llvm-objcopy \
+    OBJDUMP=${KERNELDIR}/bin/llvm-objdump \
+    OBJSIZE=${KERNELDIR}/bin/llvm-size \
+    READELF=${KERNELDIR}/bin/llvm-readelf \
+    CROSS_COMPILE=aarch64-linux-android- \
+    CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+    CLANG_TRIPLE=aarch64-linux-gnu- \
+    HOSTAR=${KERNELDIR}/bin/llvm-ar \
+    HOSTCC=${KERNELDIR}/bin/clang \
+    HOSTCXX=${KERNELDIR}/bin/clang++ 2>&1 | tee -a error.log
+else
+    make -j$(nproc --all) O=out LLVM=1 \
+    LD="$KERNELDIR/clang/bin/ld.lld" \
+    CC="$KERNELDIR/clang/bin/clang" \
+    HOSTCC="$KERNELDIR/clang/bin/clang" \
+    HOSTCXX="$KERNELDIR/clang/bin/clang++" \
+    AR="$KERNELDIR/clang/bin/llvm-ar" \
+    NM="$KERNELDIR/clang/bin/llvm-nm" \
+    STRIP="$KERNELDIR/clang/bin/llvm-strip" \
+    OBJCOPY="$KERNELDIR/clang/bin/llvm-objcopy" \
+    OBJDUMP="$KERNELDIR/clang/bin/llvm-objdump" \
+    CLANG_TRIPLE="aarch64-linux-gnu-" \
+    CROSS_COMPILE="$KERNELDIR/clang/bin/clang" \
+    CROSS_COMPILE_COMPAT="$KERNELDIR/clang/bin/clang" \
+    CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
+fi
+
+BUILD_END=$(date +"%s")
+DIFF=$(($BUILD_END - $BUILD_START))
+
+echo "**** Kernel Compilation Completed ****"
+echo "**** Verify Image.gz-dtb ****"
+
+if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
+    tg_post_build "error.log" "Compile Error!!"
+    echo -e "$red Compile Failed!!!$nocol"
+    exit 1
+fi
+
+# Anykernel3 time!!
+echo "**** Verifying AnyKernel3 Directory ****"
+if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
+  echo "AnyKernel3 not found! Cloning..."
+fi
+
+if [ "$COMP" = 6 ]; then
+  if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+    echo "Cloning failed! Aborting..."
+    exit 1
+else
+  if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+    echo "Cloning failed! Aborting..."
+    exit 1
+  fi
+fi
+
+AK3DIR=$KERNELDIR/AnyKernel3
+
+echo "**** Copying Image.gz-dtb ****"
+cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
+
+echo "**** Time to zip up! ****"
+cd $AK3DIR
+if [ "$COMP" = 6 ]; then
+zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+else
+cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
+cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
+mv anykernel-real.sh anykernel.sh
+sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
+sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
+sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
+sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
+sed -i "s/kernel.made=.*/kernel.made=dotkit @queenserenade/g" anykernel.sh
+sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
+sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
+sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
+sed -i "s/build.type=.*/build.type=$VERSION/g" anykernel.sh
+sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
+sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
+sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
+sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
+sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
+sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
+sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
+cd META-INF/com/google/android
+sed -i "s/KNAME/$KERNELNAME/g" aroma-config
+sed -i "s/KVER/$KERVER/g" aroma-config
+sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
+sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
+sed -i "s/KBDATE/$DATE/g" aroma-config
+sed -i "s/KVARIANT/$VARIANT/g" aroma-config
+fi
+
+cd $AK3DIR
+zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+
+if ! [ -f $FINAL_ZIP* ]; then
+    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to zipping the kernel, Sending image file instead."
+    exit 1
+fi
+
+mv $FINAL_ZIP* $KERNELDIR/$FINAL_ZIP.zip
+cd $KERNELDIR
+
+if [ $SIGN = 1 ]; then
+  mv $FINAL_ZIP* krenul.zip
+  curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
+  java -jar zipsigner-3.0.jar krenul.zip krenul-signed.zip
+  FINAL_ZIP="$FINAL_ZIP-signed"
+  mv krenul-signed.zip $FINAL_ZIP.zip
+fi
+
+MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
+
+echo "**** Uploading your zip now ****"
+tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
+ $(($DIFF / 60)) min(s) and $(($DIFF % 60)) seconds
+📱 *Device*
+ ${DEVICENAME}
+🐧 *Kernel Version*
+ ${KERVER}
+🛠 *Compiler*
+ ${KBUILD_COMPILER_STRING}
+Ⓜ *MD5*
+ ${MD5CHECK}
+🆕 *Changelogs*
+\`\`\`
+`git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}'`\`\`\`
+${BONUS_MSG}"
+
+# tg_pin_msg
