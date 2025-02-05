@@ -2,11 +2,17 @@
 
 export TZ="Asia/Jakarta"
 
+if [ -f kernel/arch/arm64/configs/asus/X00TD_defconfig ]; then
+    cd kernel
+else
+    echo "Kernel Cloning Failed! aborting..."
+    exit 1
 if [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
     cd kernel
 else
     echo "Kernel Cloning Failed! aborting..."
     exit 1
+fi
 fi
 
 #set -e
