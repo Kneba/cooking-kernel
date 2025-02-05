@@ -259,9 +259,9 @@ else
     CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
 fi
 
-echo -e "$cyan==== |Kernel Compilation Completed| ====$nocol"
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
+echo -e "$cyan**** Kernel Compilation Completed ****$nocol"
 
 echo -e "$red**** Verify Image.gz-dtb ****$nocol"
 if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
@@ -271,7 +271,7 @@ if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
 fi
 
 # Anykernel3 time!!
-echo -e "$blue==== |Verifying AnyKernel3| ====$nocol"
+echo -e "$blue**** Verifying AnyKernel3 ****$nocol"
 if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
   echo "AnyKernel3 not found! Cloning..."
 fi
