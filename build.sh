@@ -47,8 +47,13 @@ SIGN=1
 # 1 = true || 0 = false
 TG_SUPER=0
 
-# Additional Variables
+if [ $COMP = "6" ]; then
+KERNEL_DEFCONFIG=asus/X00TD_defconfig
+else
 KERNEL_DEFCONFIG=X00TD_defconfig
+fi
+
+# Additional Variables
 DATE=$(date '+%d%m%Y')
 FINAL_ZIP="$KERNELNAME-$VARIANT-$VERSION-$KERVER-$DATE"
 export KBUILD_BUILD_TIMESTAMP=$(date)
