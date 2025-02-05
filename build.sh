@@ -194,9 +194,9 @@ nocol='\033[0m'
 mkdir -p out
 make O=out clean
 
-echo -e "$cyan**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****$nocol"
+echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
 echo -e "$blue***********************************************"
-echo    "               BUILDING KERNEL               "
+echo    "                BUILDING KERNEL                "
 echo -e "***********************************************$nocol"
 make $KERNEL_DEFCONFIG O=out 2>&1 | tee -a error.log
 
@@ -257,21 +257,23 @@ else
     CROSS_COMPILE="$KERNELDIR/clang/bin/clang" \
     CROSS_COMPILE_COMPAT="$KERNELDIR/clang/bin/clang" \
     CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
+    fi
 fi
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
-echo -e "$cyan**** Kernel Compilation Completed ****$nocol"
+echo "**** Kernel Compilation Completed ****"
 
-echo -e "$red**** Verify Image.gz-dtb ****$nocol"
+echo "**** Verify Image.gz-dtb ****"
+
 if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ];then
     tg_post_build "error.log" "Compile Error!!"
-    echo -e "$red Compile Failed!!!$nocol"
+    echo "Compile Failed!!!"
     exit 1
 fi
 
 # Anykernel3 time!!
-echo -e "$blue**** Verifying AnyKernel3 ****$nocol"
+echo "**** Verifying AnyKernel3 ****"
 if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
   echo "AnyKernel3 not found! Cloning..."
 fi
@@ -291,10 +293,10 @@ fi
 
 AK3DIR=$KERNELDIR/AnyKernel3
 
-echo -e "$blue**** Copying Image.gz-dtb ****$nocol"
+echo "**** Copying Image.gz-dtb ****"
 cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
 
-echo -e "$blue**** Time to zip up! ****$nocol"
+echo "**** Time to zip up! ****"
 if [ "$COMP" = 6 ]; then
 cd $AK3DIR
 zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
@@ -349,7 +351,7 @@ fi
 
 MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
 
-echo -e "$yellow**** Uploading your zip now ****$nocol"
+echo "**** Uploading your zip now ****"
 tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
  $(($DIFF / 60)) min(s) and $(($DIFF % 60)) seconds
 📱 *Device*
