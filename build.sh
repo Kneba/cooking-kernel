@@ -42,9 +42,9 @@ SIGN=1
 TG_SUPER=0
 
 if [ $COMP = "6" ]; then
-KERNEL_DEFCONFIG=asus/X00TD_defconfig
+  KERNEL_DEFCONFIG=asus/X00TD_defconfig
 else
-KERNEL_DEFCONFIG=X00TD_defconfig
+  KERNEL_DEFCONFIG=X00TD_defconfig
 fi
 
 # Additional Variables
@@ -75,8 +75,7 @@ tg_post_msg(){
             -d text="$1"
         fi
 }
-tg_post_build()
-{
+tg_post_build(){
 	if [ $TG_SUPER = 1 ]
 	then
 	    MSGID=$(curl -s -F document=@"$1" \
@@ -97,8 +96,7 @@ tg_post_build()
 	    | cut -d ":" -f 4 | cut -d "," -f 1)
 	fi
 }
-tg_pin_msg()
-{
+tg_pin_msg(){
     curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG_TOKEN/pinChatMessage" \
     -d chat_id="$TG_CHAT_ID"  \
     -d message_id=$MSGID \
@@ -107,10 +105,10 @@ tg_pin_msg()
 
 ############################################################
 
-tg_post_msg "<b>`date '+%d %b %Y, %H:%M %Z'`</b>
+tg_post_msg "<b>$(date '+%d %b %Y, %H:%M %Z')</b>
 Masterpiece creation starts!
 kernel Version <b>$KERVER</b> for <b>$DEVICENAME</b>.
-Crafted with <b>`source /etc/os-release && echo "$NAME"`</b>.
+Crafted with <b>$(source /etc/os-release && echo "$NAME")</b>.
 Log URL <a href='$CIRCLE_BUILD_URL'>Click Here</a>."
 
 if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
@@ -275,15 +273,17 @@ if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
+    fi
   else
     if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
-   fi
+    fi
+  fi
 fi
 
-AK3DIR=$KERNELDIR/AnyKernel3
+AK3DIR="$KERNELDIR/AnyKernel3"
 
 echo "**** Copying Image.gz-dtb ****"
 cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
@@ -355,7 +355,7 @@ tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
  ${MD5CHECK}
 🆕 *Changelogs*
 \`\`\`
-`git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}'`\`\`\`
+$(git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}')\`\`\`
 ${BONUS_MSG}"
 
 # tg_pin_msg
