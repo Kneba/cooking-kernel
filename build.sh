@@ -2,9 +2,7 @@
 
 export TZ="Asia/Jakarta"
 
-if [ -f kernel/arch/arm64/configs/asus/X00TD_defconfig ]; then
-  cd kernel
-elif [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
+if [ -f kernel/arch/arm64/configs/asus/X00TD_defconfig ] || [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
   cd kernel
 else
   echo "Kernel Cloning Failed! aborting..."
@@ -167,6 +165,7 @@ if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
     fi
   else
     echo "Clang unavailable! Aborting..."; exit 1
+  fi
 fi
 
 export ARCH=arm64
