@@ -227,21 +227,21 @@ elif [ $COMP = 6 ]; then
     make -j$(nproc --all) O=out LLVM=1 LLVM_IAS=1 \
     LD_LIBRARY_PATH="$KERNELDIR/clang/lib64:${LD_LIBRARY_PATH}" \
     PATH="$KERNELDIR/clang/bin:$KERNELDIR/gcc64/bin:$KERNELDIR/gcc32/bin:$PATH" \
-    CC="$KERNELDIR/bin/clang" \
-    NM="$KERNELDIR/bin/llvm-nm" \
-    CXX="$KERNELDIR/bin/clang++" \
-    AR="$KERNELDIR}/bin/llvm-ar" \
-    STRIP="$KERNELDIR/bin/llvm-strip" \
-    OBJCOPY="$KERNELDIR/bin/llvm-objcopy" \
-    OBJDUMP="$KERNELDIR/bin/llvm-objdump" \
-    OBJSIZE="$KERNELDIR/bin/llvm-size" \
-    READELF="$KERNELDIR/bin/llvm-readelf" \
+    CC="$KERNELDIR/clang/bin/clang" \
+    NM="$KERNELDIR/clang/bin/llvm-nm" \
+    CXX="$KERNELDIR/clang/bin/clang++" \
+    AR="$KERNELDIR/clang/bin/llvm-ar" \
+    STRIP="$KERNELDIR/clang/bin/llvm-strip" \
+    OBJCOPY="$KERNELDIR/clang/bin/llvm-objcopy" \
+    OBJDUMP="$KERNELDIR/clang/bin/llvm-objdump" \
+    OBJSIZE="$KERNELDIR/clang/bin/llvm-size" \
+    READELF="$KERNELDIR/clang/bin/llvm-readelf" \
     CROSS_COMPILE="aarch64-linux-android-" \
     CROSS_COMPILE_ARM32="arm-linux-androideabi-" \
     CLANG_TRIPLE="aarch64-linux-gnu-" \
-    HOSTAR="$KERNELDIR/bin/llvm-ar" \
-    HOSTCC="$KERNELDIR/bin/clang" \
-    HOSTCXX="$KERNELDIR/bin/clang++" 2>&1 | tee -a error.log
+    HOSTAR="$KERNELDIR/clang/bin/llvm-ar" \
+    HOSTCC="$KERNELDIR/clang/bin/clang" \
+    HOSTCXX="$KERNELDIR/clang/bin/clang++" 2>&1 | tee -a error.log
 else
     make -j$(nproc --all) O=out LLVM=1 \
     LD="$KERNELDIR/clang/bin/ld.lld" \
