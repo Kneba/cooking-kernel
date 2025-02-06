@@ -3,7 +3,7 @@
 export TZ="Asia/Jakarta"
 
 if [ -f kernel/arch/arm64/configs/asus/X00TD_defconfig ] || [ -f kernel/arch/arm64/configs/X00TD_defconfig ]; then
-  cd kernel || exit
+  cd kernel
 else
   echo "Kernel Cloning Failed! aborting..."
   exit 1
@@ -99,7 +99,7 @@ tg_post_build(){
 tg_pin_msg(){
     curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG_TOKEN/pinChatMessage" \
     -d chat_id="$TG_CHAT_ID"  \
-    -d message_id="$MSGID" \
+    -d message_id=$MSGID \
     -d disable_notification="true"
 }
 
@@ -117,52 +117,49 @@ if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
     git clone --depth=1 https://gitlab.com/ImSurajxD/clang-r450784d -b master clang
     git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
     git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 gcc32
-    cd "$KERNELDIR || exit" || exit
+    cd $KERNELDIR
     export PATH="$KERNELDIR/clang/bin:$KERNELDIR/gcc64/bin:$KERNELDIR/gcc32/bin:$PATH"
-    export KBUILD_COMPILER_STRING=$("$KERNELDIR"/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
   elif [ $COMP = "2" ]; then
     git clone https://gitlab.com/varunhardgamer/trb_clang --depth=1 -b 17 --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
     export PATH="$KERNELDIR/clang/bin:$PATH"
-    export KBUILD_COMPILER_STRING=$("$KERNELDIR"/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
   elif [ $COMP = "5" ]; then
     apt-get install wget libncurses5 -y
     git clone --depth=1 https://github.com/RyuujiX/SDClang -b 14 sdclang
     git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 gcc64
     git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 gcc32
-    cd "$KERNELDIR || exit" || exit
+    cd $KERNELDIR
     export PATH="$KERNELDIR/sdclang/bin:$KERNELDIR/gcc64/bin:$KERNELDIR/gcc32/bin:$PATH"
     export LD_LIBRARY_PATH="$KERNELDIR/sdclang/lib:$LD_LIBRARY_PATH"
     CLANG_VER="Qualcomm® Snapdragon™ clang version 14.1.5"
     export KBUILD_COMPILER_STRING="$CLANG_VER"
     if ! [ -f "$KERNELDIR/sdclang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."
-    exit 1
+      echo "Cloning failed! Aborting..."; exit 1
     fi
   elif [ $COMP = "4" ]; then
     git clone https://github.com/kdrag0n/proton-clang --depth=1 -b master --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
     export PATH="$KERNELDIR/clang/bin:$PATH"
-    export KBUILD_COMPILER_STRING=$("$KERNELDIR"/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
   elif [ $COMP = "3" ]; then
     # git clone https://gitlab.com/Tiktodz/electrowizard-clang.git --depth=1 -b 16 --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
-    mkdir "$KERNELDIR/clang" && cd "$KERNELDIR/clang" || exit
-    wget -O ew.tar.gz https://github.com/Tiktodz/electrowizard-clang/releases/download/ElectroWizard-Clang-18.1.8-release/ElectroWizard-Clang-18.1.8.tar.gz && tar -xzf ew.tar.gz && rm -f ew.tar.gz && cd "$KERNELDIR || exit" || exit
+    mkdir "$KERNELDIR/clang" && cd "$KERNELDIR/clang"
+    wget -O ew.tar.gz https://github.com/Tiktodz/electrowizard-clang/releases/download/ElectroWizard-Clang-18.1.8-release/ElectroWizard-Clang-18.1.8.tar.gz && tar -xzf ew.tar.gz && rm -f ew.tar.gz && cd $KERNELDIR
     export PATH="$KERNELDIR/clang/bin:$PATH"
     if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."
-    exit 1
+      echo "Cloning failed! Aborting..."; exit 1
     fi
   elif [ $COMP = "1" ]; then
     apt-get install -y libarchive-tools
-    mkdir -p clang && cd clang || exit
+    mkdir -p clang && cd clang
     curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman" -o antman
     bash antman -S=09092023
     bash antman --patch=glibc
-    cd "$KERNELDIR || exit" || exit
+    cd $KERNELDIR
     export PATH="$KERNELDIR/clang/bin:$PATH"
-    export KBUILD_COMPILER_STRING=$("$KERNELDIR"/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
     if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."
-    exit 1
+      echo "Cloning failed! Aborting..."; exit 1
     fi
   else
     echo "Clang unavailable! Aborting..."; exit 1
@@ -218,7 +215,7 @@ elif [ $COMP = 5 ]; then
     CROSS_COMPILE_ARM32=arm-linux-androideabi- \
     CLANG_TRIPLE=aarch64-linux-gnu- \
     HOSTCC=gcc \
-    HOSTCXX=g++ "${ClangMoreStrings}" 2>&1 | tee -a error.log
+    HOSTCXX=g++ ${ClangMoreStrings} 2>&1 | tee -a error.log
 elif [ $COMP = 6 ]; then
     make -j$(nproc --all) O=out LLVM=1 LLVM_IAS=1 \
     LD_LIBRARY_PATH="$KERNELDIR/clang/lib64:${LD_LIBRARY_PATH}" \
@@ -238,7 +235,7 @@ elif [ $COMP = 6 ]; then
     HOSTAR="$KERNELDIR/clang/bin/llvm-ar" \
     HOSTCC="$KERNELDIR/clang/bin/clang" \
     HOSTCXX="$KERNELDIR/clang/bin/clang++" 2>&1 | tee -a error.log
-elif [ $COMP = 1 ]; then
+else
     make -j$(nproc --all) O=out LLVM=1 \
     LD="$KERNELDIR/clang/bin/ld.lld" \
     CC="$KERNELDIR/clang/bin/clang" \
@@ -261,7 +258,7 @@ DIFF=$(($BUILD_END - $BUILD_START))
 echo "**** Kernel Compilation Completed ****"
 echo "**** Verify Image.gz-dtb ****"
 
-if ! [ -f "$KERNELDIR"/out/arch/arm64/boot/Image.gz-dtb ]; then
+if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ]; then
     tg_post_build "error.log" "Compile Error!!"
     echo "Compile Failed!!!"
     exit 1
@@ -289,16 +286,16 @@ fi
 AK3DIR="$KERNELDIR/AnyKernel3"
 
 echo "**** Copying Image.gz-dtb ****"
-cp -af "$KERNELDIR"/out/arch/arm64/boot/Image.gz-dtb "$AK3DIR"
+cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
 
 echo "**** Time to zip up! ****"
 if [ "$COMP" = 6 ]; then
-  cd "$AK3DIR || exit" || exit
-  zip -r9 "$FINAL_ZIP".zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+  cd $AK3DIR
+  zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
 else
-  cd "$AK3DIR || exit" || exit
-  cp -af "$KERNELDIR"/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
-  cp -af "$KERNELDIR"/changelog META-INF/com/google/android/aroma/changelog.txt
+  cd $AK3DIR
+  cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
+  cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
   mv anykernel-real.sh anykernel.sh
   sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
   sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
@@ -316,31 +313,31 @@ else
   sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
   sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
   sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
-  cd META-INF/com/google/android || exit
+  cd META-INF/com/google/android
   sed -i "s/KNAME/$KERNELNAME/g" aroma-config
   sed -i "s/KVER/$KERVER/g" aroma-config
   sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
   sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
   sed -i "s/KBDATE/$DATE/g" aroma-config
   sed -i "s/KVARIANT/$VARIANT/g" aroma-config
-  cd "$AK3DIR || exit" || exit
-  zip -r9 "$FINAL_ZIP".zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+  cd $AK3DIR
+  zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
 fi
 
-if ! [ -f "$FINAL_ZIP"* ]; then
+if ! [ -f $FINAL_ZIP* ]; then
     tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to zipping the kernel, Sending image file instead."
     exit 1
 fi
 
-mv "$FINAL_ZIP"* "$KERNELDIR"/"$FINAL_ZIP".zip
-cd "$KERNELDIR || exit" || exit
+mv $FINAL_ZIP* $KERNELDIR/$FINAL_ZIP.zip
+cd $KERNELDIR
 
 if [ $SIGN = 1 ]; then
-  mv "$FINAL_ZIP"* krenul.zip
+  mv $FINAL_ZIP* krenul.zip
   curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
   java -jar zipsigner-3.0.jar krenul.zip krenul-signed.zip
   FINAL_ZIP="$FINAL_ZIP-signed"
-  mv krenul-signed.zip "$FINAL_ZIP".zip
+  mv krenul-signed.zip $FINAL_ZIP.zip
 fi
 
 MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
@@ -356,9 +353,6 @@ tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
  ${KBUILD_COMPILER_STRING}
 Ⓜ *MD5*
  ${MD5CHECK}
-🆕 *Changelogs*
-\`\`\`
-$(git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}')\`\`\`
-${BONUS_MSG}"
+ ${BONUS_MSG}"
 
 # tg_pin_msg
