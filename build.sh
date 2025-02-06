@@ -40,8 +40,8 @@ cdir() {
 export TZ="Asia/Jakarta"
 
 # The defult directory where the kernel should be placed
-KERNEL_DIR=$HOME/kernel
-cd $KERNEL_DIR
+KERNEL_DIR=$(pwd)
+cd kernel
 
 # The name of the device for which the kernel is built
 MODEL="Asus Zenfone Max Pro M1"
@@ -123,8 +123,8 @@ LOG_DEBUG=0
 
 ## Set defaults first
 CI=CIRCLECI
-DISTRO=$(cat /etc/issue)
-KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
+DISTRO=$(source /etc/os-release && echo "$NAME")
+HOST=$(uname -a | awk '{print $2}')
 CI_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TERM=xterm
 export KBUILD_BUILD_HOST CI_BRANCH TERM
@@ -133,7 +133,7 @@ export KBUILD_BUILD_HOST CI_BRANCH TERM
 	if [ $CI = "CIRCLECI" ]
 	then
 		export KBUILD_BUILD_VERSION=$CIRCLE_BUILD_NUM
-		export KBUILD_BUILD_HOST="CircleCI"
+		export KBUILD_BUILD_HOST=$HOST
 		export CI_BRANCH=$CIRCLE_BRANCH
 	
 	elif [ $CI = "DRONE" ]
