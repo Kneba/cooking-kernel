@@ -40,8 +40,8 @@ cdir() {
 export TZ="Asia/Jakarta"
 
 # The defult directory where the kernel should be placed
-KERNEL_DIR=$(pwd)
-cd kernel
+KERNEL_DIR=$(pwd)/kernel
+cd $KERNEL_DIR
 
 # The name of the device for which the kernel is built
 MODEL="Asus Zenfone Max Pro M1"
