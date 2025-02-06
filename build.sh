@@ -355,7 +355,7 @@ tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
  ${MD5CHECK}
 🆕 *Changelogs*
 \`\`\`
-$(git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}')\`\`\`
+`git log --oneline -n3 | cut -d" " -f2- | awk '{print "• " $(A)}'`\`\`\`
 ${BONUS_MSG}"
 
 # tg_pin_msg
