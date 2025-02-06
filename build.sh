@@ -269,21 +269,18 @@ echo "**** Verifying AnyKernel3 ****"
 if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
   echo "AnyKernel3 not found! Cloning..."
   if [ "$COMP" = 6 ]; then
-    if ! git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
+    git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+    AK3DIR="$KERNELDIR/AnyKernel3"
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
-    fi
   else
-    if ! git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3; then
+    git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+    AK3DIR="$KERNELDIR/AnyKernel3"
       tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
       echo "Cloning failed! Aborting..."
       exit 1
-    fi
-  fi
 fi
-
-AK3DIR="$KERNELDIR/AnyKernel3"
 
 echo "**** Copying Image.gz-dtb ****"
 cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
