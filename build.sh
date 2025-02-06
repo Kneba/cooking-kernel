@@ -56,7 +56,7 @@ export KBUILD_BUILD_HOST="electrowizard"
 
 ############################################################
 
-tg_post_msg(){
+tg_post_msg() {
         if [ $TG_SUPER = 1 ]
         then
             curl -s -o /dev/null -X POST \
@@ -75,34 +75,25 @@ tg_post_msg(){
             -d text="$1"
         fi
 }
-tg_post_build(){
+tg_post_build() {
 	if [ $TG_SUPER = 1 ]
 	then
-	    MSGID=$(curl -s -F document=@"$1" \
+	    curl -s -F document=@"$1" \
 	    "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
 	    -F chat_id="$TG_CHAT_ID"  \
 	    -F message_thread_id="$TG_TOPIC_ID" \
 	    -F "disable_web_page_preview=true" \
 	    -F "parse_mode=Markdown" \
-	    -F caption="$2" \
-	    | cut -d ":" -f 4 | cut -d "," -f 1)
+	    -F caption="$2"
 	else
-	    MSGID=$(curl -s -F document=@"$1" \
+	    curl -s -F document=@"$1" \
 	    "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
 	    -F chat_id="$TG_CHAT_ID"  \
 	    -F "disable_web_page_preview=true" \
 	    -F "parse_mode=Markdown" \
-	    -F caption="$2" \
-	    | cut -d ":" -f 4 | cut -d "," -f 1)
+	    -F caption="$2"
 	fi
 }
-tg_pin_msg(){
-    curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG_TOKEN/pinChatMessage" \
-    -d chat_id="$TG_CHAT_ID"  \
-    -d message_id=$MSGID \
-    -d disable_notification="true"
-}
-
 ############################################################
 
 tg_post_msg "<b>$(date '+%d %b %Y, %H:%M %Z')</b>
@@ -172,7 +163,7 @@ export SUBARCH=arm64
 # Speed up build process
 MAKE="./makeparallel"
 
-BUILD_START=$(date +"%s")
+# BUILD_START=$(date +"%s")
 Reset='\033[0m'
 Black='\033[0;30m'
 Red='\033[1;31m'
@@ -252,104 +243,106 @@ else
     CROSS_COMPILE_ARM32="$KERNELDIR/clang/bin/clang" 2>&1 | tee -a error.log
 fi
 
-BUILD_END=$(date +"%s")
-DIFF=$(($BUILD_END - $BUILD_START))
+tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Script sedang malas bikin zip, harap maklum"
 
-echo "**** Kernel Compilation Completed ****"
-echo "**** Verify Image.gz-dtb ****"
+# BUILD_END=$(date +"%s")
+# DIFF=$(($BUILD_END - $BUILD_START))
 
-if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ]; then
-    tg_post_build "error.log" "Compile Error!!"
-    echo "Compile Failed!!!"
-    exit 1
-fi
+# echo "**** Kernel Compilation Completed ****"
+# echo "**** Verify Image.gz-dtb ****"
 
-# Anykernel3 time!!
-echo "**** Verifying AnyKernel3 ****"
-if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
-  echo "AnyKernel3 not found! Cloning..."
-  if [ "$COMP" = 6 ]; then
-    git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3
-    AK3DIR="$KERNELDIR/AnyKernel3"
-      tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
-      echo "Cloning failed! Aborting..."
-      exit 1
-  else
-    git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3
-    AK3DIR="$KERNELDIR/AnyKernel3"
-      tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
-      echo "Cloning failed! Aborting..."
-      exit 1
-fi
+# if ! [ -f $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb ]; then
+    # tg_post_build "error.log" "Compile Error!!"
+    # echo "Compile Failed!!!"
+    # exit 1
+# fi
 
-echo "**** Copying Image.gz-dtb ****"
-cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
+# if [ "$COMP" = 6 ]; then
+  # git clone --depth=1 -b 419 https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+  # # if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
+    # # tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+    # # echo "Cloning failed! Aborting..."
+    # # exit 1
+  # # fi
+# else
+  # git clone --depth=1 -b hmp-old https://github.com/Tiktodz/AnyKernel3 AnyKernel3
+  # # if ! [ -d "$KERNELDIR/AnyKernel3" ]; then
+    # # tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to Clone Anykernel, Sending image file instead"
+    # # echo "Cloning failed! Aborting..."
+    # # exit 1
+  # # fi
+# fi
 
-echo "**** Time to zip up! ****"
-if [ "$COMP" = 6 ]; then
-  cd $AK3DIR
-  zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
-else
-  cd $AK3DIR
-  cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
-  cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
-  mv anykernel-real.sh anykernel.sh
-  sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
-  sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
-  sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
-  sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
-  sed -i "s/kernel.made=.*/kernel.made=dotkit @queenserenade/g" anykernel.sh
-  sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
-  sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
-  sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
-  sed -i "s/build.type=.*/build.type=$VERSION/g" anykernel.sh
-  sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
-  sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
-  sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
-  sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
-  sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
-  sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
-  sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
-  cd META-INF/com/google/android
-  sed -i "s/KNAME/$KERNELNAME/g" aroma-config
-  sed -i "s/KVER/$KERVER/g" aroma-config
-  sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
-  sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
-  sed -i "s/KBDATE/$DATE/g" aroma-config
-  sed -i "s/KVARIANT/$VARIANT/g" aroma-config
-  cd $AK3DIR
-  zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
-fi
+# AK3DIR="$KERNELDIR/AnyKernel3"
 
-if ! [ -f $FINAL_ZIP* ]; then
-    tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to zipping the kernel, Sending image file instead."
-    exit 1
-fi
+# echo "**** Copying Image.gz-dtb ****"
+# cp -af $KERNELDIR/out/arch/arm64/boot/Image.gz-dtb $AK3DIR
 
-mv $FINAL_ZIP* $KERNELDIR/$FINAL_ZIP.zip
-cd $KERNELDIR
+# echo "**** Time to zip up! ****"
+# if [ "$COMP" = 6 ]; then
+  # cd $AK3DIR
+  # zip -r9 $FINAL_ZIP.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+# else
+  # cd $AK3DIR
+  # cp -af $KERNELDIR/init.$CODENAME.Spectrum.rc spectrum/init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel TheOneMemory/g" spectrum/init.spectrum.rc
+  # cp -af $KERNELDIR/changelog META-INF/com/google/android/aroma/changelog.txt
+  # mv anykernel-real.sh anykernel.sh
+  # sed -i "s/kernel.string=.*/kernel.string=$KERNELNAME/g" anykernel.sh
+  # sed -i "s/kernel.type=.*/kernel.type=$VARIANT/g" anykernel.sh
+  # sed -i "s/kernel.for=.*/kernel.for=$CODENAME/g" anykernel.sh
+  # sed -i "s/kernel.compiler=.*/kernel.compiler=$KBUILD_COMPILER_STRING/g" anykernel.sh
+  # sed -i "s/kernel.made=.*/kernel.made=dotkit @queenserenade/g" anykernel.sh
+  # sed -i "s/kernel.version=.*/kernel.version=$KERVER/g" anykernel.sh
+  # sed -i "s/message.word=.*/message.word=Appreciate your efforts for choosing TheOneMemory kernel./g" anykernel.sh
+  # sed -i "s/build.date=.*/build.date=$DATE/g" anykernel.sh
+  # sed -i "s/build.type=.*/build.type=$VERSION/g" anykernel.sh
+  # sed -i "s/supported.versions=.*/supported.versions=9-13/g" anykernel.sh
+  # sed -i "s/device.name1=.*/device.name1=X00TD/g" anykernel.sh
+  # sed -i "s/device.name2=.*/device.name2=X00T/g" anykernel.sh
+  # sed -i "s/device.name3=.*/device.name3=Zenfone Max Pro M1 (X00TD)/g" anykernel.sh
+  # sed -i "s/device.name4=.*/device.name4=ASUS_X00TD/g" anykernel.sh
+  # sed -i "s/device.name5=.*/device.name5=ASUS_X00T/g" anykernel.sh
+  # sed -i "s/X00TD=.*/X00TD=1/g" anykernel.sh
+  # cd META-INF/com/google/android
+  # sed -i "s/KNAME/$KERNELNAME/g" aroma-config
+  # sed -i "s/KVER/$KERVER/g" aroma-config
+  # sed -i "s/KAUTHOR/dotkit @quuenserenade/g" aroma-config
+  # sed -i "s/KDEVICE/Zenfone Max Pro M1/g" aroma-config
+  # sed -i "s/KBDATE/$DATE/g" aroma-config
+  # sed -i "s/KVARIANT/$VARIANT/g" aroma-config
+  # cd $AK3DIR
+  # zip -r9 $FINAL_ZIP.zip * -x .git README.md anykernel-real.sh .gitignore zipsigner* *.zip
+# fi
 
-if [ $SIGN = 1 ]; then
-  mv $FINAL_ZIP* krenul.zip
-  curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
-  java -jar zipsigner-3.0.jar krenul.zip krenul-signed.zip
-  FINAL_ZIP="$FINAL_ZIP-signed"
-  mv krenul-signed.zip $FINAL_ZIP.zip
-fi
+# if ! [ -f $FINAL_ZIP* ]; then
+    # tg_post_build "$KERNELDIR/out/arch/arm64/boot/Image.gz-dtb" "Failed to zipping the kernel, Sending image file instead."
+    # exit 1
+# fi
 
-MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
+# mv $FINAL_ZIP* $KERNELDIR/$FINAL_ZIP.zip
+# cd $KERNELDIR
 
-echo "**** Uploading your zip now ****"
-tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
- $(($DIFF / 60)) min(s) and $(($DIFF % 60)) seconds
-📱 *Device*
- ${DEVICENAME}
-🐧 *Kernel Version*
- ${KERVER}
-🛠 *Compiler*
- ${KBUILD_COMPILER_STRING}
-Ⓜ *MD5*
- ${MD5CHECK}
- ${BONUS_MSG}"
+# if [ $SIGN = 1 ]; then
+  # mv $FINAL_ZIP* krenul.zip
+  # curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
+  # java -jar zipsigner-3.0.jar krenul.zip krenul-signed.zip
+  # FINAL_ZIP="$FINAL_ZIP-signed"
+  # mv krenul-signed.zip $FINAL_ZIP.zip
+# fi
+
+# MD5CHECK=$(md5sum "$FINAL_ZIP.zip" | cut -d' ' -f1)
+
+# echo "**** Uploading your zip now ****"
+# tg_post_build "$FINAL_ZIP.zip" "⏳ *Compile Time*
+ # $(($DIFF / 60)) min(s) and $(($DIFF % 60)) seconds
+# 📱 *Device*
+ # ${DEVICENAME}
+# 🐧 *Kernel Version*
+ # ${KERVER}
+# 🛠 *Compiler*
+ # ${KBUILD_COMPILER_STRING}
+# Ⓜ *MD5*
+ # ${MD5CHECK}
+ # ${BONUS_MSG}"
 
 # tg_pin_msg
