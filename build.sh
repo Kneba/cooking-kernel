@@ -135,7 +135,8 @@ if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
     CLANG_VER="Qualcomm® Snapdragon™ clang version 14.1.5"
     export KBUILD_COMPILER_STRING="$CLANG_VER"
     if ! [ -f "$KERNELDIR/sdclang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."; exit 1
+      echo "Cloning failed! Aborting..."
+    exit 1
     fi
   elif [ $COMP = "4" ]; then
     git clone https://github.com/kdrag0n/proton-clang --depth=1 -b master --single-branch clang || (echo "Cloning failed! Aborting..."; exit 1)
@@ -147,7 +148,8 @@ if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
     wget -O ew.tar.gz https://github.com/Tiktodz/electrowizard-clang/releases/download/ElectroWizard-Clang-18.1.8-release/ElectroWizard-Clang-18.1.8.tar.gz && tar -xzf ew.tar.gz && rm -f ew.tar.gz && cd $KERNELDIR
     export PATH="$KERNELDIR/clang/bin:$PATH"
     if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."; exit 1
+      echo "Cloning failed! Aborting..."
+    exit 1
     fi
   elif [ $COMP = "1" ]; then
     apt-get install -y libarchive-tools
@@ -159,7 +161,8 @@ if ! [ -d "$KERNELDIR/clang" ] && ! [ -d "$KERNELDIR/sdclang" ]; then
     export PATH="$KERNELDIR/clang/bin:$PATH"
     export KBUILD_COMPILER_STRING=$($KERNELDIR/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
     if ! [ -f "$KERNELDIR/clang/bin/clang" ]; then
-      echo "Cloning failed! Aborting..."; exit 1
+      echo "Cloning failed! Aborting..."
+    exit 1
     fi
   else
     echo "Clang unavailable! Aborting..."; exit 1
@@ -235,6 +238,7 @@ elif [ $COMP = 6 ]; then
     HOSTAR="$KERNELDIR/clang/bin/llvm-ar" \
     HOSTCC="$KERNELDIR/clang/bin/clang" \
     HOSTCXX="$KERNELDIR/clang/bin/clang++" 2>&1 | tee -a error.log
+    fi
 else
     make -j$(nproc --all) O=out LLVM=1 \
     LD="$KERNELDIR/clang/bin/ld.lld" \
