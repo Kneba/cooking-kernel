@@ -40,7 +40,7 @@ cdir() {
 export TZ="Asia/Jakarta"
 
 # The defult directory where the kernel should be placed
-KERNEL_DIR=$HOME/Kernel
+KERNEL_DIR=$HOME/kernel
 cd $KERNEL_DIR
 
 # The name of the device for which the kernel is built
@@ -122,7 +122,7 @@ LOG_DEBUG=0
 # set KBUILD_BUILD_VERSION and KBUILD_BUILD_HOST and CI_BRANCH
 
 ## Set defaults first
-CI=DRONE
+CI=CIRCLECI
 DISTRO=$(cat /etc/issue)
 KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
 CI_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -152,7 +152,8 @@ LINUXVER=$(make kernelversion)
 COMMIT_HEAD=$(git log --oneline -1)
 
 # Set Date
-DATE=$(TZ=Asia/Jakarta date +"%d-%m-%Y")
+DATE=$(TZ=Asia/Jakarta date +"%d%m%Y")
+DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%s")
 
 #Now Its time for other stuffs like cloning, exporting, etc
 
@@ -455,7 +456,7 @@ build_kernel() {
 
 <b>Linux Tag Version: </b><code>$LINUXVER</code>
 
-<b>ElectroWizard Build Failure Logs: </b><a href='$SERVER_URL'> Check Here </a>
+<b>ElectroWizard Build Failure Logs: </b><a href='$CIRCLE_BUILD_URL'> Check Here </a>
 
 <b>Time Taken: </b><code>$((DIFF / 60)) minute(s) $((DIFF % 60)) second(s)</code>
 
