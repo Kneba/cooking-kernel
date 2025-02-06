@@ -60,7 +60,7 @@ MANUFACTURERINFO="ASUSTek Computer Inc."
 VARIANT=STBL
 
 # Build Type
-BUILD_TYPE="TEST: Might be unstable so use at your own risk"
+BUILD_TYPE="NIGHTLY: Might be unstable so use at your own risk"
 
 # Specify compiler.
 # 'clang' or 'clangxgcc' or 'gcc'
@@ -123,7 +123,7 @@ LOG_DEBUG=0
 
 ## Set defaults first
 CI=CIRCLECI
-DISTRO=$(source /etc/os-release && echo "$NAME")
+DISTRO=$(source /etc/os-release && echo "${NAME}")
 HOST=$(uname -a | awk '{print $2}')
 CI_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TERM=xterm
@@ -135,14 +135,15 @@ export KBUILD_BUILD_HOST CI_BRANCH TERM
 		export KBUILD_BUILD_VERSION=$CIRCLE_BUILD_NUM
 		export KBUILD_BUILD_HOST=$HOST
 		export CI_BRANCH=$CIRCLE_BRANCH
-	
+		export SERVER_URL="$CIRCLE_BUILD_URL"
+
 	elif [ $CI = "DRONE" ]
 	then
 		export KBUILD_BUILD_VERSION=$DRONE_BUILD_NUMBER
 		export KBUILD_BUILD_HOST=$DRONE_SYSTEM_HOST
 		export CI_BRANCH=$DRONE_BRANCH
 		export BASEDIR=$DRONE_REPO_NAME # overriding
-		export SERVER_URL="https://cloud.drone.io/ElectroWizard/${DRONE_REPO_NAME}/${KBUILD_BUILD_VERSION}/1/2"
+		export SERVER_URL="${DRONE_SYSTEM_PROTO}://${DRONE_SYSTEM_HOSTNAME}/${AUTHOR}/${BASEDIR}/${KBUILD_BUILD_VERSION}"
 	fi
 
 #Check Kernel Version
@@ -206,10 +207,10 @@ DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%s")
 # Function to replace defconfig versioning
 setversioning() {
     # For staging branch
-    KERNELNAME="TOM-$LINUXVER-X00TD-$DATE"
+    KERNELNAME="TOM-$DEVICE-$LINUXVER-$DATE2"
     # Export our new localversion and zipnames
     export KERNELNAME
-    export ZIPNAME="$KERNELNAME.zip"
+    export ZIPNAME="$KERNELNAME"
 }
 
 ##--------------------------------------------------------------##
@@ -234,7 +235,7 @@ exports() {
 	fi
 
 	if [ $LTO = "1" ];then
-		export LD=ld.lld
+        export LD=ld.lld
         export LD_LIBRARY_PATH=$TC_DIR/lib
 	fi
 
@@ -303,7 +304,7 @@ tg_send_sticker() {
 tg_send_files(){
     KernelFiles="$(pwd)/$KERNELNAME.zip"
 	MD5CHECK=$(md5sum "$KernelFiles" | cut -d' ' -f1)
-	SID="CAACAgUAAxkBAAIlv2DEzB-BSFWNyXkkz1NNNOp_pm2nAAIaAgACXGo4VcNVF3RY1YS8HwQ"
+	SID="CAACAgUAAxkBAAECIRxnpQ-LMetktgXJIB-ZCykpN8oShgACdg4AAmF-4VeT5uphqQn3bjYE"
 	STICK="CAACAgUAAxkBAAIlwGDEzB_igWdjj3WLj1IPro2ONbYUAAIrAgACHcUZVo23oC09VtdaHwQ"
     MSG="✅ <b>Build Done</b>
 - <code>$((DIFF / 60)) minute(s) $((DIFF % 60)) second(s) </code>
@@ -355,7 +356,7 @@ build_kernel() {
 
 <b>Linux Tag Version: </b><code>$LINUXVER</code>
 
-<b>ElectroWizard Build Progress: </b><a href='$SERVER_URL'> Check Here </a>
+<b>Build Progress: </b><a href='$SERVER_URL'> Check Here </a>
 
 <b>Builder Info: </b>
 
