@@ -154,7 +154,7 @@ COMMIT_HEAD=$(git log --oneline -1)
 
 # Set Date
 DATE=$(TZ=Asia/Jakarta date +"%d%m%Y")
-DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%s")
+DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%H")
 
 #Now Its time for other stuffs like cloning, exporting, etc
 
@@ -210,7 +210,7 @@ setversioning() {
     KERNELNAME="TOM-$DEVICE-$LINUXVER-$DATE2"
     # Export our new localversion and zipnames
     export KERNELNAME
-    export ZIPNAME="$KERNELNAME"
+    ZIPNAME="$KERNELNAME"
 }
 
 ##--------------------------------------------------------------##
@@ -302,7 +302,7 @@ tg_send_sticker() {
 ##----------------------------------------------------------------##
 
 tg_send_files(){
-    KernelFiles="$(pwd)/$KERNELNAME.zip"
+    KernelFiles="$(pwd)/$ZIPNAME.zip"
 	MD5CHECK=$(md5sum "$KernelFiles" | cut -d' ' -f1)
 	SID="CAACAgUAAxkBAAECIRxnpQ-LMetktgXJIB-ZCykpN8oShgACdg4AAmF-4VeT5uphqQn3bjYE"
 	STICK="CAACAgUAAxkBAAIlwGDEzB_igWdjj3WLj1IPro2ONbYUAAIrAgACHcUZVo23oC09VtdaHwQ"
@@ -482,7 +482,7 @@ gen_zip() {
 	fi
 
 	cd $AK_DIR
-	zip -r9 $KERNELNAME.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+	zip -r9 $ZIPNAME.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
 
 	if [ $SIGN = 1 ]
 	then
@@ -492,12 +492,13 @@ gen_zip() {
  			msg "|| Signing Zip ||"
 			tg_post_msg "<code>Signing Zip file with AOSP keys..</code>"
  		fi
-		cd $AK_DIR
-		mv $KERNELNAME* kernel.zip
+                mv $ZIPNAME* $KERNEL_DIR/$ZIPNAME.zip
+                cd $AK_DIR
+		mv $ZIPNAME* kernel.zip
 		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
 		java -jar zipsigner-3.0.jar kernel.zip kernel-signed.zip
-		ZIPNAME="$KERNELNAME-signed"
-		mv kernel-signed.zip $KERNELNAME.zip
+		ZIPNAME="$ZIPNAME-signed"
+		mv kernel-signed.zip $ZIPNAME.zip
 	fi
 
 	if [ "$PTTG" = 1 ]
