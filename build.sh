@@ -57,7 +57,7 @@ DEFCONFIG=asus/X00TD_defconfig
 MANUFACTURERINFO="ASUSTek Computer Inc."
 
 # Kernel Variant
-VARIANT=STBL
+VARIANT=Nightly
 
 # Build Type
 BUILD_TYPE="NIGHTLY: Might be unstable so use at your own risk"
@@ -207,9 +207,8 @@ DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%H")
 # Function to replace defconfig versioning
 setversioning() {
     # For staging branch
-    KERNELNAME="TOM-$DEVICE-$LINUXVER-$DATE2"
+    KERNELNAME="TOM-$VARIANT-$LINUXVER"
     # Export our new localversion and zipnames
-    export KERNELNAME
     ZIPNAME="$KERNELNAME"
 }
 
@@ -302,7 +301,7 @@ tg_send_sticker() {
 ##----------------------------------------------------------------##
 
 tg_send_files(){
-    KernelFiles="$(pwd)/$ZIPNAME.zip"
+    KernelFiles="$(pwd)/$ZIP_FINAL.zip"
 	MD5CHECK=$(md5sum "$KernelFiles" | cut -d' ' -f1)
 	SID="CAACAgUAAxkBAAECIRxnpQ-LMetktgXJIB-ZCykpN8oShgACdg4AAmF-4VeT5uphqQn3bjYE"
 	STICK="CAACAgUAAxkBAAIlwGDEzB_igWdjj3WLj1IPro2ONbYUAAIrAgACHcUZVo23oC09VtdaHwQ"
@@ -316,7 +315,7 @@ tg_send_files(){
 - <code>$MD5CHECK</code>
 
 <b>Zip Name</b>
-- <code>$KERNELNAME.zip</code>"
+- <code>$ZIP_FINAL.zip</code>"
 
         curl --progress-bar -F document=@"$KernelFiles" "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
         -F chat_id="$CHATID"  \
@@ -352,7 +351,7 @@ build_kernel() {
 
 <b>Build Date: </b><code>$DATE</code>
 
-<b>Kernel Name: </b><code>$KERNELNAME</code>
+<b>Kernel Name: </b><code>$ZIPNAME</code>
 
 <b>Linux Tag Version: </b><code>$LINUXVER</code>
 
@@ -482,7 +481,10 @@ gen_zip() {
 	fi
 
 	cd $AK_DIR
-	zip -r9 $ZIPNAME.zip * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+	zip -r9 $ZIPNAME-"$DATE2" * -x .git README.md ./*placeholder .gitignore  zipsigner* *.zip
+
+	## Prepare a final zip variable
+	ZIP_FINAL="$ZIPNAME-$DATE2"
 
 	if [ $SIGN = 1 ]
 	then
@@ -492,13 +494,13 @@ gen_zip() {
  			msg "|| Signing Zip ||"
 			tg_post_msg "<code>Signing Zip file with AOSP keys..</code>"
  		fi
-                mv $ZIPNAME* $KERNEL_DIR/$ZIPNAME.zip
+
                 cd $AK_DIR
-		mv $ZIPNAME* kernel.zip
+	        mv $ZIP_FINAL* kernel.zip
 		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
 		java -jar zipsigner-3.0.jar kernel.zip kernel-signed.zip
-		ZIPNAME="$ZIPNAME-signed"
-		mv kernel-signed.zip $ZIPNAME.zip
+		ZIP_FINAL="$ZIP_FINAL-signed"
+		mv kernel-signed.zip $ZIP_FINAL.zip
 	fi
 
 	if [ "$PTTG" = 1 ]
