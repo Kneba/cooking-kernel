@@ -57,7 +57,7 @@ DEFCONFIG=asus/X00TD_defconfig
 MANUFACTURERINFO="ASUSTek Computer Inc."
 
 # Kernel Variant
-VARIANT=Nightly
+VARIANT=Tree
 
 # Build Type
 BUILD_TYPE="NIGHTLY: Might be unstable so use at your own risk"
@@ -132,14 +132,12 @@ export KBUILD_BUILD_HOST CI_BRANCH TERM
 ## Check for CI
 	if [ $CI = "CIRCLECI" ]
 	then
-		export KBUILD_BUILD_VERSION=$CIRCLE_BUILD_NUM
 		export KBUILD_BUILD_HOST=$HOST
 		export CI_BRANCH=$CIRCLE_BRANCH
 		export SERVER_URL="$CIRCLE_BUILD_URL"
 
 	elif [ $CI = "DRONE" ]
 	then
-		export KBUILD_BUILD_VERSION=$DRONE_BUILD_NUMBER
 		export KBUILD_BUILD_HOST=$DRONE_SYSTEM_HOST
 		export CI_BRANCH=$DRONE_BRANCH
 		export BASEDIR=$DRONE_REPO_NAME # overriding
@@ -168,7 +166,8 @@ DATE2=$(TZ=Asia/Jakarta date +"%d%m%Y-%H")
 	elif [ $COMPILER = "clangxgcc" ]
 	then
 		msg "|| Cloning AOSP clang x GCC ||"
-		git clone --depth=1 https://gitlab.com/ImSurajxD/clang-r450784d -b master $KERNEL_DIR/clang
+###		git clone --depth=1 https://gitlab.com/ImSurajxD/clang-r450784d -b master $KERNEL_DIR/clang
+		git clone --depth=1 https://gitlab.com/kei-space/clang/r522817.git $KERNEL_DIR/clang
 		git clone --depth=1 https://github.com/Kneba/aarch64-linux-android-4.9 $KERNEL_DIR/gcc64
 		git clone --depth=1 https://github.com/Kneba/arm-linux-androideabi-4.9 $KERNEL_DIR/gcc32
 
